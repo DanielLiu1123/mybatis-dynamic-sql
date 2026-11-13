@@ -62,8 +62,8 @@ public class MyBatis3RenderingStrategy extends RenderingStrategy {
     }
 
     private String renderJavaType(BindableColumn<?> column) {
-        return column.javaType()
-                .map(jt -> ",javaType=" + jt.getName()) //$NON-NLS-1$
+        return column.javaGenericType()
+                .map(jt -> ",javaType=" + (jt instanceof Class<?> ? ((Class<?>) jt).getName() : jt.getTypeName())) //$NON-NLS-1$
                 .orElse(""); //$NON-NLS-1$
     }
 }
