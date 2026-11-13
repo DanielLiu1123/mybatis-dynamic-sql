@@ -15,6 +15,7 @@
  */
 package org.mybatis.dynamic.sql;
 
+import java.lang.reflect.Type;
 import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
@@ -38,6 +39,11 @@ public interface BindableColumn<T> extends BasicColumn {
 
     default @Nullable Object convertParameterType(T value) {
         return value;
+    }
+
+    /** Returns the complete Java type used for parameter binding, including type arguments. */
+    default Optional<Type> javaGenericType() {
+        return javaType().map(type -> type);
     }
 
     default Optional<Class<T>> javaType() {

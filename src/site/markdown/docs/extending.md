@@ -378,3 +378,24 @@ Important notes:
    phrase. **This is the key to what's needed to implement a custom condition.**
 4. The class implements `Filterable` and `Mappable` to provide `filter` and `map` functions as is expected for most
    conditions in the library
+
+## Complete Java types for TypeHandlers
+
+`SqlColumn.withJavaType(Type)` carries complete reflective types through column copies and SQL
+rendering. The existing `withJavaType(Class)` and `javaType()` APIs remain available.
+Use `javaGenericType()` to inspect the full type. For parameterized types, `javaType()` is empty.
+Setting a new type replaces the previous metadata, and column copies preserve the complete type.
+Unbound type variables are rejected when the column is built, with its name included in the error.
+
+```java
+Type payloadType = new TypeReference<Map<String, List<Role>>>() {}.getRawType();
+SqlColumn<Map<String, List<Role>>> payload = table.column("payload", JDBCType.VARCHAR)
+        .withJavaType(payloadType)
+        .withTypeHandler("com.example.JsonTypeHandler");
+```
+
+This example uses `org.apache.ibatis.type.TypeReference` from MyBatis 3.6 or later. A reflective
+`Type` obtained from a Java field or another type-token library is also accepted. The MyBatis3
+rendering strategy emits the complete type in INSERT, UPDATE, and WHERE parameter bindings.
+Generic parameter expressions require a MyBatis version supporting parameterized `javaType`
+descriptions. Java result-property mappings use the target model's declared generic type.
