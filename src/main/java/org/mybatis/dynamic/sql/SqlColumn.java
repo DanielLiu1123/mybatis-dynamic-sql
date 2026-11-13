@@ -79,6 +79,7 @@ import org.mybatis.dynamic.sql.util.StringUtilities;
  *           <li>{@link SqlColumn#withRenderingStrategy(RenderingStrategy)}</li>
  *           <li>{@link SqlColumn#withTypeHandler(String)}</li>
  *           <li>{@link SqlColumn#withJavaType(Class)}</li>
+ *           <li>{@link SqlColumn#withJavaType(Type)}</li>
  *           <li>{@link SqlColumn#withParameterTypeConverter(ParameterTypeConverter)}</li>
  *       </ul>
  *     </li>
@@ -128,6 +129,9 @@ public class SqlColumn<T> implements BindableColumn<T>, SortSpecification {
         tableQualifier = builder.tableQualifier;
         javaType = builder.javaType;
         javaGenericType = builder.javaGenericType;
+        if (javaGenericType != null) {
+            requireResolvedType(javaGenericType, name);
+        }
         javaProperty = builder.javaProperty;
     }
 
@@ -161,7 +165,7 @@ public class SqlColumn<T> implements BindableColumn<T>, SortSpecification {
 
     @Override
     public Optional<Type> javaGenericType() {
-        return javaGenericType == null ? BindableColumn.super.javaGenericType() : Optional.of(javaGenericType);
+        return Optional.ofNullable(javaGenericType).or(BindableColumn.super::javaGenericType);
     }
 
     public Optional<String> javaProperty() {
@@ -382,7 +386,6 @@ public class SqlColumn<T> implements BindableColumn<T>, SortSpecification {
                 .withRenderingStrategy(this.renderingStrategy)
                 .withParameterTypeConverter(this.parameterTypeConverter)
                 .withTableQualifier(this.tableQualifier)
-                .withJavaType(this.javaType)
                 .withJavaType(this.javaGenericType == null ? this.javaType : this.javaGenericType)
                 .withJavaProperty(this.javaProperty);
     }
@@ -461,17 +464,17 @@ public class SqlColumn<T> implements BindableColumn<T>, SortSpecification {
 
         public B withJavaType(@Nullable Class<T> javaType) {
             this.javaType = javaType;
-            this.javaGenericType = javaType;
+            this.javaGenericType = null;
             return getThis();
         }
 
         @SuppressWarnings("unchecked")
         public B withJavaType(@Nullable Type javaType) {
-            if (javaType != null) {
-                requireResolvedType(javaType, name);
+            if (javaType == null || javaType instanceof Class<?>) {
+                return withJavaType((Class<T>) javaType);
             }
             this.javaGenericType = javaType;
-            this.javaType = javaType instanceof Class<?> ? (Class<T>) javaType : null;
+            this.javaType = null;
             return getThis();
         }
 
@@ -485,14 +488,15 @@ public class SqlColumn<T> implements BindableColumn<T>, SortSpecification {
         public abstract SqlColumn<T> build();
     }
 
-    private static void requireResolvedType(Type type, @Nullable String columnName) {
+    private static void requireResolvedType(Type type, String columnName) {
         if (type instanceof TypeVariable<?>) {
             throw new IllegalArgumentException("Unresolved type variable '" + type.getTypeName()
                     + "' for column '" + columnName + "'");
         }
         if (type instanceof ParameterizedType parameterized) {
-            if (parameterized.getOwnerType() != null) {
-                requireResolvedType(parameterized.getOwnerType(), columnName);
+            Type owner = parameterized.getOwnerType();
+            if (owner != null) {
+                requireResolvedType(owner, columnName);
             }
             for (Type argument : parameterized.getActualTypeArguments()) {
                 requireResolvedType(argument, columnName);

@@ -15,8 +15,8 @@
  */
 package org.mybatis.dynamic.sql;
 
-import java.util.Optional;
 import java.lang.reflect.Type;
+import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
 

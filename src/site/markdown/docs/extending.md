@@ -383,7 +383,9 @@ Important notes:
 
 `SqlColumn.withJavaType(Type)` carries complete reflective types through column copies and SQL
 rendering. The existing `withJavaType(Class)` and `javaType()` APIs remain available.
-Use `javaGenericType()` to inspect the full type.
+Use `javaGenericType()` to inspect the full type. For parameterized types, `javaType()` is empty.
+Setting a new type replaces the previous metadata, and column copies preserve the complete type.
+Unbound type variables are rejected when the column is built, with its name included in the error.
 
 ```java
 Type payloadType = new TypeReference<Map<String, List<Role>>>() {}.getRawType();
